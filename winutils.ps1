@@ -77,16 +77,23 @@ try {
 
 }
 
+$buttonHeight = 32
+$descSpacing = 6
+$buttonSpacing = 38
+$buttonCount = $taskScripts.Count
+$panelHeight = [Math]::Max(200, $buttonCount * $buttonSpacing + 10)
+$formHeight = $panelHeight + 180
+
 $buttonPanel = New-Object System.Windows.Forms.Panel
 $buttonPanel.Width = 760
-$buttonPanel.Height = 400
+$buttonPanel.Height = $panelHeight
 $buttonPanel.Top = 10
 $buttonPanel.Left = 10
-$buttonPanel.AutoScroll = $true
+$buttonPanel.AutoScroll = $false
 $Form.Controls.Add($buttonPanel)
 
 $outputBox.Left = 10
-$outputBox.Top = 420
+$outputBox.Top = $panelHeight + 20
 $outputBox.Width = 760
 $outputBox.Height = 120
 $outputBox.Font = 'Consolas, 10'
@@ -95,12 +102,12 @@ $yPos = 10
 foreach ($script in $taskScripts) {
     $button = New-Object System.Windows.Forms.Button
     $button.Text = $script.name
-    $button.Width = 250
-    $button.Height = 36
+    $button.Width = 180
+    $button.Height = $buttonHeight
     $button.Top = $yPos
     $button.Left = 10
     $button.BackColor = [System.Drawing.Color]::FromArgb(230,240,255)
-    $button.Font = 'Segoe UI, 10, style=Bold'
+    $button.Font = 'Segoe UI, 9, style=Bold'
     $button.FlatStyle = 'Flat'
     $button.Add_Click({
         $scriptUrl = $script.download_url  
@@ -111,19 +118,19 @@ foreach ($script in $taskScripts) {
     if ($taskDescriptions.ContainsKey($script.name)) {
         $descLabel = New-Object System.Windows.Forms.Label
         $descLabel.Text = $taskDescriptions[$script.name]
-        $descLabel.Width = 480
-        $descLabel.Top = $yPos
-        $descLabel.Left = 270
-        $descLabel.Font = 'Segoe UI, 10'
+        $descLabel.Width = 560
+        $descLabel.Top = $yPos + [Math]::Round(($buttonHeight - 18)/2)
+        $descLabel.Left = 200
+        $descLabel.Font = 'Segoe UI, 9'
         $descLabel.ForeColor = [System.Drawing.Color]::FromArgb(60,60,60)
         $buttonPanel.Controls.Add($descLabel)
     }
-    $yPos += 46
+    $yPos += $buttonSpacing
 }
 
 $Form.BackColor = [System.Drawing.Color]::FromArgb(245, 248, 255)
 $Form.Font = 'Segoe UI, 10'
 $Form.Width = 800
-$Form.Height = 600
+$Form.Height = $formHeight
 
 $Form.ShowDialog()
