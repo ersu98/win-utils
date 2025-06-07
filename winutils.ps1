@@ -2,8 +2,9 @@ Add-Type -AssemblyName System.Windows.Forms
 
 $Form = New-Object System.Windows.Forms.Form
 $Form.Text = "Windows Utilities"
-$Form.Width = 400
-$Form.Height = 400
+$Form.Width = 800
+$Form.Height = 600
+$Form.StartPosition = "CenterScreen"
 
 $githubRepoOwner = "ersu98"
 $githubRepoName = "win-utils"
@@ -76,30 +77,51 @@ try {
 
 }
 
-$yPos = 20
+$buttonPanel = New-Object System.Windows.Forms.Panel
+$buttonPanel.Width = 400
+$buttonPanel.Height = 540
+$buttonPanel.Top = 10
+$buttonPanel.Left = 10
+$buttonPanel.AutoScroll = $true
+$Form.Controls.Add($buttonPanel)
+
+$outputBox.Left = 420
+$outputBox.Top = 10
+$outputBox.Width = 350
+$outputBox.Height = 540
+$outputBox.Font = 'Consolas, 10'
+
+$yPos = 10
 foreach ($script in $taskScripts) {
     $button = New-Object System.Windows.Forms.Button
     $button.Text = $script.name
-    $button.Width = 350
-    $button.Height = 40
+    $button.Width = 250
+    $button.Height = 36
     $button.Top = $yPos
+    $button.Left = 10
+    $button.BackColor = [System.Drawing.Color]::FromArgb(230,240,255)
+    $button.Font = 'Segoe UI, 10, style=Bold'
+    $button.FlatStyle = 'Flat'
     $button.Add_Click({
         $scriptUrl = $script.download_url  
         Write-Host "Executing $($script.name)..."
         Execute-Task -scriptUrl $scriptUrl
     })
-    $Form.Controls.Add($button)
-    # Legg til beskrivelse under knappen hvis tilgjengelig
+    $buttonPanel.Controls.Add($button)
     if ($taskDescriptions.ContainsKey($script.name)) {
         $descLabel = New-Object System.Windows.Forms.Label
         $descLabel.Text = $taskDescriptions[$script.name]
         $descLabel.Width = 350
-        $descLabel.Top = $yPos + 40
-        $descLabel.Left = 0
-        $Form.Controls.Add($descLabel)
-        $yPos += 20  # Ekstra plass for beskrivelse
+        $descLabel.Top = $yPos + 6
+        $descLabel.Left = 270
+        $descLabel.Font = 'Segoe UI, 9'
+        $descLabel.ForeColor = [System.Drawing.Color]::FromArgb(60,60,60)
+        $buttonPanel.Controls.Add($descLabel)
     }
-    $yPos += 50  # Space out buttons vertically
+    $yPos += 46
 }
+
+$Form.BackColor = [System.Drawing.Color]::FromArgb(245, 248, 255)
+$Form.Font = 'Segoe UI, 10'
 
 $Form.ShowDialog()
