@@ -78,17 +78,17 @@ try {
 }
 
 $buttonPanel = New-Object System.Windows.Forms.Panel
-$buttonPanel.Width = 400
-$buttonPanel.Height = 540
+$buttonPanel.Width = 760
+$buttonPanel.Height = 400
 $buttonPanel.Top = 10
 $buttonPanel.Left = 10
 $buttonPanel.AutoScroll = $true
 $Form.Controls.Add($buttonPanel)
 
-$outputBox.Left = 420
-$outputBox.Top = 10
-$outputBox.Width = 350
-$outputBox.Height = 540
+$outputBox.Left = 10
+$outputBox.Top = 420
+$outputBox.Width = 760
+$outputBox.Height = 120
 $outputBox.Font = 'Consolas, 10'
 
 $yPos = 10
@@ -111,10 +111,10 @@ foreach ($script in $taskScripts) {
     if ($taskDescriptions.ContainsKey($script.name)) {
         $descLabel = New-Object System.Windows.Forms.Label
         $descLabel.Text = $taskDescriptions[$script.name]
-        $descLabel.Width = 350
-        $descLabel.Top = $yPos + 6
+        $descLabel.Width = 480
+        $descLabel.Top = $yPos
         $descLabel.Left = 270
-        $descLabel.Font = 'Segoe UI, 9'
+        $descLabel.Font = 'Segoe UI, 10'
         $descLabel.ForeColor = [System.Drawing.Color]::FromArgb(60,60,60)
         $buttonPanel.Controls.Add($descLabel)
     }
@@ -123,5 +123,7 @@ foreach ($script in $taskScripts) {
 
 $Form.BackColor = [System.Drawing.Color]::FromArgb(245, 248, 255)
 $Form.Font = 'Segoe UI, 10'
+$Form.Width = 800
+$Form.Height = 600
 
 $Form.ShowDialog()
