@@ -30,7 +30,18 @@ $outputBox.Height = 200
 $outputBox.Top = 180
 $outputBox.Multiline = $true
 $outputBox.ScrollBars = 'Vertical'
+$outputBox.ReadOnly = $true
 $Form.Controls.Add($outputBox)
+
+function Test-IsAdmin {
+    $currentIdentity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = New-Object System.Security.Principal.WindowsPrincipal($currentIdentity)
+    return $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+if (-not (Test-IsAdmin)) {
+    $outputBox.Text = "⚠️  The program did not start with Administrator privledges.`r`nSome utilities may fail due to missing permissions.`r`nTry running the script as Administrator."
+}
 
 function Execute-Task {
     param (
