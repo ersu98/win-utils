@@ -31,6 +31,7 @@ $outputBox.Top = 180
 $outputBox.Multiline = $true
 $outputBox.ScrollBars = 'Vertical'
 $outputBox.ReadOnly = $true
+$outputBox.TabStop = $false
 $Form.Controls.Add($outputBox)
 
 function Test-IsAdmin {
@@ -40,7 +41,7 @@ function Test-IsAdmin {
 }
 
 if (-not (Test-IsAdmin)) {
-    $outputBox.Text = "⚠️  The program did not start with Administrator privledges.`r`nSome utilities may fail due to missing permissions.`r`nTry running the script as Administrator."
+    $outputBox.Text = "⚠️  The program did not start with Administrator privileges.`r`nSome utilities may fail due to missing permissions.`r`nTry running the script as Administrator."
 }
 
 function Execute-Task {
