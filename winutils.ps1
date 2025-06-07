@@ -63,6 +63,19 @@ function Execute-Task {
     Remove-Item -Path $tempScriptPath
 }
 
+$descUrl = "https://raw.githubusercontent.com/$githubRepoOwner/$githubRepoName/main/$taskFolder/../utilities.txt"
+$taskDescriptions = @{}
+try {
+    $descContent = Invoke-RestMethod -Uri $descUrl -Headers @{"User-Agent"="PowerShell"}
+    foreach ($line in $descContent -split "`n") {
+        if ($line -match '^(.*?):\s*(.*)$') {
+            $taskDescriptions[$matches[1]] = $matches[2]
+        }
+    }
+} catch {
+
+}
+
 $yPos = 20
 foreach ($script in $taskScripts) {
     $button = New-Object System.Windows.Forms.Button
@@ -75,9 +88,18 @@ foreach ($script in $taskScripts) {
         Write-Host "Executing $($script.name)..."
         Execute-Task -scriptUrl $scriptUrl
     })
-    
     $Form.Controls.Add($button)
-    $yPos += 50  
+    # Legg til beskrivelse under knappen hvis tilgjengelig
+    if ($taskDescriptions.ContainsKey($script.name)) {
+        $descLabel = New-Object System.Windows.Forms.Label
+        $descLabel.Text = $taskDescriptions[$script.name]
+        $descLabel.Width = 350
+        $descLabel.Top = $yPos + 40
+        $descLabel.Left = 0
+        $Form.Controls.Add($descLabel)
+        $yPos += 20  # Ekstra plass for beskrivelse
+    }
+    $yPos += 50  # Space out buttons vertically
 }
 
 $Form.ShowDialog()
