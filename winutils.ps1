@@ -172,6 +172,7 @@ $menuHeight = $menuStrip.Height
 $buttonPanel.Top = 10 + $menuHeight
 $outputBox.Top = $panelHeight + 20 + $menuHeight
 
+
 $Form.BackColor = [System.Drawing.Color]::FromArgb(245, 248, 255)
 $Form.Font = 'Segoe UI, 10'
 $Form.Width = 800
