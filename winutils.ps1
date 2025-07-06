@@ -112,6 +112,7 @@ $outputBox.Font = 'Consolas, 10'
 
 $yPos = 10
 foreach ($script in $taskScripts) {
+    $scriptUrlLocal = $script.download_url  # Capture the value for this iteration
     $button = New-Object System.Windows.Forms.Button
     $button.Text = $script.name
     $button.Width = 180
@@ -122,9 +123,7 @@ foreach ($script in $taskScripts) {
     $button.Font = 'Segoe UI, 9, style=Bold'
     $button.FlatStyle = 'Flat'
     $button.Add_Click({
-        $scriptUrl = $script.download_url  
-        Write-Host "Executing $($script.name)..."
-        Execute-Task -scriptUrl $scriptUrl
+        Execute-Task -scriptUrl $scriptUrlLocal
     })
     $buttonPanel.Controls.Add($button)
     if ($taskDescriptions.ContainsKey($script.name)) {
