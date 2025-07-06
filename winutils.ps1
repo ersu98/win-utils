@@ -24,6 +24,9 @@ function Get-TaskScripts {
 
 $taskScripts = Get-TaskScripts
 
+# Debug: Show what scripts and URLs are being loaded
+$outputBox.Text = ($taskScripts | Select-Object name, download_url | Out-String)
+
 $outputBox = New-Object System.Windows.Forms.TextBox
 $outputBox.Width = 350
 $outputBox.Height = 200
