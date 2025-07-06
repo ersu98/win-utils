@@ -154,31 +154,41 @@ foreach ($script in $taskScripts) {
 $menuStrip = New-Object System.Windows.Forms.MenuStrip
 $fileMenu = New-Object System.Windows.Forms.ToolStripMenuItem('File')
 $debugMenuItem = New-Object System.Windows.Forms.ToolStripMenuItem('Debug')
-$activationStatusItem = New-Object System.Windows.Forms.ToolStripMenuItem('Activation Status')
+$winstatusMenuItem = New-Object System.Windows.Forms.ToolStripMenuItem('Windows Activation Status')
 
 # Debug button
 $debugMenuItem.Add_Click({
-    [System.Windows.Forms.MessageBox]::Show(($taskScripts | Select-Object name, download_url | Out-String), "Loaded Scripts")
-    [System.Windows.Forms.MessageBox]::Show(($sysInfo = Get-ComputerInfo | Out-String))
+    [System.Windows.Forms.MessageBox]::Show(($taskScripts | Select-Object name, download_url | Out-String), "Loaded Scripts & URLs")
 })
 
-# Activation Status button
-$activationStatus.Add_Click({
+# Windows Activation Status button
+$winstatusMenuItem.Add_Click({
     try {
-        $activationStatusText += (Get-CimInstance -ClassName Win32_OperatingSystem) | Select-Object Caption, Version, BuildNumber
+        $os = Get-CimInstance -ClassName Win32_OperatingSystem
+        $edition = $os.Caption
+        $version = $os.Version
+        $build = $os.BuildNumber
+        $activation = (Get-CimInstance -Query "SELECT * FROM SoftwareLicensingProduct WHERE PartialProductKey IS NOT NULL AND LicenseStatus = 1").Description
+        if (-not $activation) { $activation = 'Not activated' }
+        $installDateRaw = (Get-CimInstance -ClassName SoftwareLicensingService).InstallDate
+        $installDate = if ($installDateRaw) { [Management.ManagementDateTimeConverter]::ToDateTime($installDateRaw) } else { 'Unknown' }
+        $msg = "Windows Edition: $edition`r`nVersion: $version (Build $build)`r`nActivation Status: $activation`r`nInstall Date: $installDate"
     } catch {
-        $activationStatusText = "Failed to retrieve activation status: $($_.Exception.Message)"
+        $msg = "Failed to retrieve activation status: $($_.Exception.Message)"
     }
-    [System.Windows.Froms.MessageBox]::Show("Activation Status: $($activationStatusText)", "Activation Status")
+    [System.Windows.Forms.MessageBox]::Show($msg, "Windows Activation Status")
 })
 
+$fileMenu.DropDownItems.Clear()
 $fileMenu.DropDownItems.Add($debugMenuItem)
+$fileMenu.DropDownItems.Add($winstatusMenuItem)
+
+$menuStrip.Items.Clear()
 $menuStrip.Items.Add($fileMenu)
 $Form.MainMenuStrip = $menuStrip
-$Form.Controls.Add($menuStrip)
+if (-not ($Form.Controls.Contains($menuStrip))) { $Form.Controls.Add($menuStrip) }
 $menuStrip.Dock = 'Top'
 
-# Adjust layout to account for menu height
 $menuHeight = $menuStrip.Height
 $buttonPanel.Top = 10 + $menuHeight
 $outputBox.Top = $buttonPanel.Top + $buttonPanel.Height + 10
