@@ -59,8 +59,21 @@ function Execute-Task {
     $job = Start-Job -ScriptBlock {
         param ($path)
         try {
-            $output = & $path
-            return $output
+            $psi = New-Object System.Diagnostics.ProcessStartInfo
+            $psi.FileName = 'powershell.exe'
+            $psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$path`""
+            $psi.RedirectStandardOutput = $true
+            $psi.RedirectStandardError = $true
+            $psi.UseShellExecute = $false
+            $proc = [System.Diagnostics.Process]::Start($psi)
+            $stdout = $proc.StandardOutput.ReadToEnd()
+            $stderr = $proc.StandardError.ReadToEnd()
+            $proc.WaitForExit()
+            if ($proc.ExitCode -eq 0) {
+                return $stdout
+            } else {
+                return $stderr
+            }
         } catch {
             return "Error: $($_.Exception.Message)"
         }
