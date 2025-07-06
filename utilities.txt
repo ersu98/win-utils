@@ -1,3 +1,3 @@
-sysinfo.ps1: Simple system information
-win_activator.ps1: Windows Activation Tool - Massgrave
-win_debloater.ps1: Windows Debloater Tool - ChrisTitusTech (Stable)
+Sysinfo.ps1: Simple system information
+WinActivator.ps1: Windows Activation Tool - Massgrave
+WinDebloater.ps1: Windows Debloater Tool - ChrisTitusTech (Stable)
