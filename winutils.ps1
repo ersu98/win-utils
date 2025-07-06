@@ -1,7 +1,7 @@
 Add-Type -AssemblyName System.Windows.Forms
 
 $Form = New-Object System.Windows.Forms.Form
-$Form.Text = "Windows Utilities"
+$Form.Text = "Quick Windows Utilities"
 $Form.Width = 800
 $Form.Height = 600
 $Form.StartPosition = "CenterScreen"
@@ -41,7 +41,7 @@ function Test-IsAdmin {
 }
 
 if (-not (Test-IsAdmin)) {
-    $outputBox.Text = "⚠️  The program did not start with Administrator privileges.`r`nSome utilities may fail due to missing permissions.`r`nTry running the script as Administrator."
+    $outputBox.Text = "⚠️  The program did not start with Administrator privileges.`r`nSome utilities may fail due to missing permissions.`r`nTry running the program as Administrator."
 }
 
 function Execute-Task {
