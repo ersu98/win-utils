@@ -1,7 +1,7 @@
 Add-Type -AssemblyName System.Windows.Forms
 
 $Form = New-Object System.Windows.Forms.Form
-$Form.Text = "Quick Windows Utilities"
+$Form.Text = "Windows Utilities"
 $Form.Width = 800
 $Form.Height = 600
 $Form.StartPosition = "CenterScreen"
@@ -41,7 +41,7 @@ function Test-IsAdmin {
 }
 
 if (-not (Test-IsAdmin)) {
-    $outputBox.Text = "⚠️  The program did not start with Administrator privileges.`r`nSome utilities may fail due to missing permissions.`r`nTry running the program as Administrator."
+    $outputBox.Text = "⚠️  The program did not start with Administrator privileges.`r`nSome utilities may fail due to missing permissions.`r`nTry running the script as Administrator."
 }
 
 function Execute-Task {
@@ -53,36 +53,27 @@ function Execute-Task {
 
     $scriptContent = Invoke-RestMethod -Uri $scriptUrl
 
-    # Use a unique temp file for each script execution
-    $tempScriptPath = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), [System.IO.Path]::GetRandomFileName() + ".ps1")
+    $tempScriptPath = [System.IO.Path]::GetTempFileName() + ".ps1"
     Set-Content -Path $tempScriptPath -Value $scriptContent
 
-    $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName = 'powershell.exe'
-    $psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$tempScriptPath`""
-    $psi.RedirectStandardOutput = $true
-    $psi.RedirectStandardError = $true
-    $psi.UseShellExecute = $false
-    $psi.CreateNoWindow = $true
+    $job = Start-Job -ScriptBlock {
+        param ($path)
+        try {
+            $output = & $path
+            return $output
+        } catch {
+            return "Error: $($_.Exception.Message)"
+        }
+    } -ArgumentList $tempScriptPath
 
-    # Disable all buttons while running
-    foreach ($ctrl in $buttonPanel.Controls) { if ($ctrl -is [System.Windows.Forms.Button]) { $ctrl.Enabled = $false } }
-
-    $proc = [System.Diagnostics.Process]::Start($psi)
-    $stdout = $proc.StandardOutput.ReadToEnd()
-    $stderr = $proc.StandardError.ReadToEnd()
-    $proc.WaitForExit()
-
-    # Re-enable all buttons after running
-    foreach ($ctrl in $buttonPanel.Controls) { if ($ctrl -is [System.Windows.Forms.Button]) { $ctrl.Enabled = $true } }
-
-    if ($proc.ExitCode -eq 0) {
-        $outputBox.Text = $stdout
-    } else {
-        $outputBox.Text = $stderr
+    while ($job.State -eq 'Running') {
+        Start-Sleep -Seconds 1
     }
 
-    Remove-Item -Path $tempScriptPath -Force
+    $result = Receive-Job -Job $job
+    $outputBox.Text = $result  
+
+    Remove-Item -Path $tempScriptPath
 }
 
 $descUrl = "https://raw.githubusercontent.com/$githubRepoOwner/$githubRepoName/main/$taskFolder/../utilities.txt"
@@ -91,7 +82,7 @@ try {
     $descContent = Invoke-RestMethod -Uri $descUrl -Headers @{"User-Agent"="PowerShell"}
     foreach ($line in $descContent -split "`n") {
         if ($line -match '^(.*?):\s*(.*)$') {
-            $taskDescriptions[$matches[1].Trim().ToLower()] = $matches[2]
+            $taskDescriptions[$matches[1]] = $matches[2]
         }
     }
 } catch {
@@ -119,16 +110,8 @@ $outputBox.Width = 760
 $outputBox.Height = 120
 $outputBox.Font = 'Consolas, 10'
 
-function New-ClickHandler($url) {
-    return {
-        param($sender, $eventArgs)
-        Execute-Task -scriptUrl $url
-    }.GetNewClosure()
-}
-
 $yPos = 10
 foreach ($script in $taskScripts) {
-    $scriptUrlLocal = $script.download_url  # Ensure unique closure per iteration
     $button = New-Object System.Windows.Forms.Button
     $button.Text = $script.name
     $button.Width = 180
@@ -138,12 +121,15 @@ foreach ($script in $taskScripts) {
     $button.BackColor = [System.Drawing.Color]::FromArgb(230,240,255)
     $button.Font = 'Segoe UI, 9, style=Bold'
     $button.FlatStyle = 'Flat'
-    $button.Add_Click( (New-ClickHandler $scriptUrlLocal) )
+    $button.Add_Click({
+        $scriptUrl = $script.download_url  
+        Write-Host "Executing $($script.name)..."
+        Execute-Task -scriptUrl $scriptUrl
+    })
     $buttonPanel.Controls.Add($button)
-    $descKey = $script.name.Trim().ToLower()
-    if ($taskDescriptions.ContainsKey($descKey)) {
+    if ($taskDescriptions.ContainsKey($script.name)) {
         $descLabel = New-Object System.Windows.Forms.Label
-        $descLabel.Text = $taskDescriptions[$descKey]
+        $descLabel.Text = $taskDescriptions[$script.name]
         $descLabel.Width = 560
         $descLabel.Top = $yPos + [Math]::Round(($buttonHeight - 18)/2)
         $descLabel.Left = 200
