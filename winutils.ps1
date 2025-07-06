@@ -130,9 +130,8 @@ foreach ($script in $taskScripts) {
     $button.BackColor = [System.Drawing.Color]::FromArgb(230,240,255)
     $button.Font = 'Segoe UI, 9, style=Bold'
     $button.FlatStyle = 'Flat'
-    $scriptUrlLocal = $script.download_url  # Capture value for this iteration
+    $scriptUrlLocal = $script.download_url
     $button.Add_Click({
-        Write-Host "Executing $($this.Text)..."
         Execute-Task -scriptUrl $scriptUrlLocal
     })
     $buttonPanel.Controls.Add($button)
