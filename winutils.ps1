@@ -150,6 +150,25 @@ foreach ($script in $taskScripts) {
     $yPos += $buttonSpacing
 }
 
+# Add a menu strip with a File menu and Debug item
+$menuStrip = New-Object System.Windows.Forms.MenuStrip
+$fileMenu = New-Object System.Windows.Forms.ToolStripMenuItem('File')
+$debugMenuItem = New-Object System.Windows.Forms.ToolStripMenuItem('Debug')
+
+# Debug
+$debugMenuItem.Add_Click({
+    $outputBox.Text = 'Debug: Running debug commands...'
+    [System.Windows.Forms.MessageBox]::Show(($taskScripts | Select-Object name, download_url | Out-String), "Loaded Scripts")
+    $sysInfo = Get-ComputerInfo | Out-String
+    $outputBox.Text += "`r`n" + $sysInfo
+})
+
+$fileMenu.DropDownItems.Add($debugMenuItem)
+$menuStrip.Items.Add($fileMenu)
+$Form.MainMenuStrip = $menuStrip
+$Form.Controls.Add($menuStrip)
+$menuStrip.Dock = 'Top'
+
 $Form.BackColor = [System.Drawing.Color]::FromArgb(245, 248, 255)
 $Form.Font = 'Segoe UI, 10'
 $Form.Width = 800
