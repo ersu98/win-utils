@@ -131,10 +131,10 @@ foreach ($script in $taskScripts) {
     $button.Font = 'Segoe UI, 9, style=Bold'
     $button.FlatStyle = 'Flat'
     $thisScriptUrl = $script.download_url
-    $button.Add_Click({
+    $button.Add_Click({ param($url)
         Write-Host "Executing $($button.Text)..."
-        Execute-Task -scriptUrl $thisScriptUrl
-    })
+        Execute-Task -scriptUrl $url
+    }, $thisScriptUrl)
     $buttonPanel.Controls.Add($button)
     $descKey = $script.name.Trim().ToLower()
     if ($taskDescriptions.ContainsKey($descKey)) {
