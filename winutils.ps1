@@ -24,9 +24,6 @@ function Get-TaskScripts {
 
 $taskScripts = Get-TaskScripts
 
-# Debug: Show what scripts and URLs are being loaded
-[System.Windows.Forms.MessageBox]::Show(($taskScripts | Select-Object name, download_url | Out-String), "Loaded Scripts")
-
 $outputBox = New-Object System.Windows.Forms.TextBox
 $outputBox.Width = 350
 $outputBox.Height = 200
