@@ -53,26 +53,36 @@ function Execute-Task {
 
     $scriptContent = Invoke-RestMethod -Uri $scriptUrl
 
-    $tempScriptPath = [System.IO.Path]::GetTempFileName() + ".ps1"
+    # Use a unique temp file for each script execution
+    $tempScriptPath = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), [System.IO.Path]::GetRandomFileName() + ".ps1")
     Set-Content -Path $tempScriptPath -Value $scriptContent
 
     $psi = New-Object System.Diagnostics.ProcessStartInfo
     $psi.FileName = 'powershell.exe'
-    $psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$tempScriptPath`""
+    $psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$tempScriptPath`""
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError = $true
     $psi.UseShellExecute = $false
+    $psi.CreateNoWindow = $true
+
+    # Disable all buttons while running
+    foreach ($ctrl in $buttonPanel.Controls) { if ($ctrl -is [System.Windows.Forms.Button]) { $ctrl.Enabled = $false } }
+
     $proc = [System.Diagnostics.Process]::Start($psi)
     $stdout = $proc.StandardOutput.ReadToEnd()
     $stderr = $proc.StandardError.ReadToEnd()
     $proc.WaitForExit()
+
+    # Re-enable all buttons after running
+    foreach ($ctrl in $buttonPanel.Controls) { if ($ctrl -is [System.Windows.Forms.Button]) { $ctrl.Enabled = $true } }
+
     if ($proc.ExitCode -eq 0) {
         $outputBox.Text = $stdout
     } else {
         $outputBox.Text = $stderr
     }
 
-    Remove-Item -Path $tempScriptPath
+    Remove-Item -Path $tempScriptPath -Force
 }
 
 $descUrl = "https://raw.githubusercontent.com/$githubRepoOwner/$githubRepoName/main/$taskFolder/../utilities.txt"
