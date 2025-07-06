@@ -128,6 +128,7 @@ function New-ClickHandler($url) {
 
 $yPos = 10
 foreach ($script in $taskScripts) {
+    $scriptUrlLocal = $script.download_url  # Ensure unique closure per iteration
     $button = New-Object System.Windows.Forms.Button
     $button.Text = $script.name
     $button.Width = 180
@@ -137,7 +138,6 @@ foreach ($script in $taskScripts) {
     $button.BackColor = [System.Drawing.Color]::FromArgb(230,240,255)
     $button.Font = 'Segoe UI, 9, style=Bold'
     $button.FlatStyle = 'Flat'
-    $scriptUrlLocal = $script.download_url
     $button.Add_Click( (New-ClickHandler $scriptUrlLocal) )
     $buttonPanel.Controls.Add($button)
     $descKey = $script.name.Trim().ToLower()
