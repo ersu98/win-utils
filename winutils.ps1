@@ -59,7 +59,7 @@ function Execute-Task {
     try {
         $psi = New-Object System.Diagnostics.ProcessStartInfo
         $psi.FileName = 'powershell.exe'
-        $psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$tempScriptPath`""
+        $psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -Command ""& { . '$tempScriptPath' }"""
         $psi.RedirectStandardOutput = $true
         $psi.RedirectStandardError = $true
         $psi.UseShellExecute = $false
