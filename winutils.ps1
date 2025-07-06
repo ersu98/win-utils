@@ -56,24 +56,30 @@ function Execute-Task {
     $tempScriptPath = [System.IO.Path]::GetTempFileName() + ".ps1"
     Set-Content -Path $tempScriptPath -Value $scriptContent
 
-    $job = Start-Job -ScriptBlock {
-        param ($path)
-        try {
-            $output = & $path
-            return $output
-        } catch {
-            return "Error: $($_.Exception.Message)"
+    try {
+        $psi = New-Object System.Diagnostics.ProcessStartInfo
+        $psi.FileName = 'powershell.exe'
+        $psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$tempScriptPath`""
+        $psi.RedirectStandardOutput = $true
+        $psi.RedirectStandardError = $true
+        $psi.UseShellExecute = $false
+        $psi.CreateNoWindow = $true
+
+        $proc = [System.Diagnostics.Process]::Start($psi)
+        $stdout = $proc.StandardOutput.ReadToEnd()
+        $stderr = $proc.StandardError.ReadToEnd()
+        $proc.WaitForExit()
+
+        if ($proc.ExitCode -eq 0) {
+            $outputBox.Text = $stdout
+        } else {
+            $outputBox.Text = "Error: $stderr"
         }
-    } -ArgumentList $tempScriptPath
-
-    while ($job.State -eq 'Running') {
-        Start-Sleep -Seconds 1
+    } catch {
+        $outputBox.Text = "Error: $($_.Exception.Message)"
+    } finally {
+        Remove-Item -Path $tempScriptPath -Force -ErrorAction SilentlyContinue
     }
-
-    $result = Receive-Job -Job $job
-    $outputBox.Text = $result  
-
-    Remove-Item -Path $tempScriptPath
 }
 
 $descUrl = "https://raw.githubusercontent.com/$githubRepoOwner/$githubRepoName/main/$taskFolder/../utilities.txt"
