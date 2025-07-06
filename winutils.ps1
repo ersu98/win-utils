@@ -82,7 +82,7 @@ try {
     $descContent = Invoke-RestMethod -Uri $descUrl -Headers @{"User-Agent"="PowerShell"}
     foreach ($line in $descContent -split "`n") {
         if ($line -match '^(.*?):\s*(.*)$') {
-            $taskDescriptions[$matches[1]] = $matches[2]
+            $taskDescriptions[$matches[1].Trim().ToLower()] = $matches[2]
         }
     }
 } catch {
@@ -127,9 +127,10 @@ foreach ($script in $taskScripts) {
         Execute-Task -scriptUrl $scriptUrl
     })
     $buttonPanel.Controls.Add($button)
-    if ($taskDescriptions.ContainsKey($script.name)) {
+    $descKey = $script.name.Trim().ToLower()
+    if ($taskDescriptions.ContainsKey($descKey)) {
         $descLabel = New-Object System.Windows.Forms.Label
-        $descLabel.Text = $taskDescriptions[$script.name]
+        $descLabel.Text = $taskDescriptions[$descKey]
         $descLabel.Width = 560
         $descLabel.Top = $yPos + [Math]::Round(($buttonHeight - 18)/2)
         $descLabel.Left = 200
