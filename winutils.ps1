@@ -119,6 +119,13 @@ $outputBox.Width = 760
 $outputBox.Height = 120
 $outputBox.Font = 'Consolas, 10'
 
+function New-ClickHandler($url) {
+    return {
+        param($sender, $eventArgs)
+        Execute-Task -scriptUrl $url
+    }.GetNewClosure()
+}
+
 $yPos = 10
 foreach ($script in $taskScripts) {
     $button = New-Object System.Windows.Forms.Button
@@ -131,9 +138,7 @@ foreach ($script in $taskScripts) {
     $button.Font = 'Segoe UI, 9, style=Bold'
     $button.FlatStyle = 'Flat'
     $scriptUrlLocal = $script.download_url
-    $button.Add_Click({
-        Execute-Task -scriptUrl $scriptUrlLocal
-    })
+    $button.Add_Click( (New-ClickHandler $scriptUrlLocal) )
     $buttonPanel.Controls.Add($button)
     $descKey = $script.name.Trim().ToLower()
     if ($taskDescriptions.ContainsKey($descKey)) {
