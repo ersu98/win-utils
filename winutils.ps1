@@ -154,11 +154,22 @@ foreach ($script in $taskScripts) {
 $menuStrip = New-Object System.Windows.Forms.MenuStrip
 $fileMenu = New-Object System.Windows.Forms.ToolStripMenuItem('File')
 $debugMenuItem = New-Object System.Windows.Forms.ToolStripMenuItem('Debug')
+$activationStatusItem = New-Object System.Windows.Forms.ToolStripMenuItem('Activation Status')
 
 # Debug button
 $debugMenuItem.Add_Click({
     [System.Windows.Forms.MessageBox]::Show(($taskScripts | Select-Object name, download_url | Out-String), "Loaded Scripts")
     [System.Windows.Forms.MessageBox]::Show(($sysInfo = Get-ComputerInfo | Out-String))
+})
+
+# Activation Status button
+$activationStatus.Add_Click({
+    try {
+        $activationStatusText += (Get-CimInstance -ClassName Win32_OperatingSystem) | Select-Object Caption, Version, BuildNumber
+    } catch {
+        $activationStatusText = "Failed to retrieve activation status: $($_.Exception.Message)"
+    }
+    [System.Windows.Froms.MessageBox]::Show("Activation Status: $($activationStatusText)", "Activation Status")
 })
 
 $fileMenu.DropDownItems.Add($debugMenuItem)
