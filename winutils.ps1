@@ -91,21 +91,21 @@ $global:ExecuteTask = {
 $taskDescriptions = @{}
 $taskTooltips = @{}
 try {
-    $descContent = Invoke-RestMethod -Uri $taskDescUrl -Headers @{"User-Agent"="PowerShell"}
-    $jsonData = $descContent | ConvertFrom-Json
+    $jsonData = Invoke-RestMethod -Uri $taskDescUrl -Headers @{"User-Agent"="PowerShell"}
     
-    foreach ($item in $jsonData) {
-        if ($item.PSObject.Properties['utility'] -and $item.PSObject.Properties['shortDescription']) {
-            $taskDescriptions[$item.utility] = $item.shortDescription
-            
-            if ($item.PSObject.Properties['longDescription']) {
-                $taskTooltips[$item.utility] = $item.longDescription
+    if ($jsonData -and $jsonData.Count -gt 0) {
+        foreach ($item in $jsonData) {
+            if ($item.PSObject.Properties['utility'] -and $item.PSObject.Properties['shortDescription']) {
+                $taskDescriptions[$item.utility] = $item.shortDescription
+                
+                if ($item.PSObject.Properties['longDescription'] -and $item.longDescription) {
+                    $taskTooltips[$item.utility] = $item.longDescription
+                }
             }
         }
     }
-
 } catch {
-    Write-Host "Warning: Could not load task descriptions from JSON file: $($_.Exception.Message)"
+    # Silent error handling - debug info available in Debug menu
 }
 
 $buttonHeight = 32
@@ -177,7 +177,122 @@ $winstatusMenuItem = New-Object System.Windows.Forms.ToolStripMenuItem('Windows 
 
 
 $debugMenuItem.Add_Click({
-    [System.Windows.Forms.MessageBox]::Show(($taskScripts | Select-Object name, download_url | Out-String), "Loaded Scripts & URLs")
+    $debugForm = New-Object System.Windows.Forms.Form
+    $debugForm.Text = "Debug Information"
+    $debugForm.Width = 800
+    $debugForm.Height = 600
+    $debugForm.StartPosition = "CenterScreen"
+    $debugForm.BackColor = [System.Drawing.Color]::FromArgb(45, 45, 48)
+    $debugForm.ForeColor = [System.Drawing.Color]::White
+    $debugTextBox = New-Object System.Windows.Forms.TextBox
+    $debugTextBox.Multiline = $true
+    $debugTextBox.ScrollBars = 'Vertical'
+    $debugTextBox.ReadOnly = $true
+    $debugTextBox.Font = New-Object System.Drawing.Font("Consolas", 10)
+    $debugTextBox.BackColor = [System.Drawing.Color]::FromArgb(30, 30, 30)
+    $debugTextBox.ForeColor = [System.Drawing.Color]::White
+    $debugTextBox.Dock = 'Fill'
+    $debugTextBox.WordWrap = $false
+    
+    $debugInfo = @()
+    
+    $debugInfo += "=" * 79
+    $debugInfo += "                                LOADED SCRIPTS                                "
+    $debugInfo += "=" * 79
+    $debugInfo += ""
+    
+    foreach ($script in $taskScripts) {
+        $debugInfo += "Script Name: $($script.name)"
+        $debugInfo += "Download URL: $($script.download_url)"
+        $debugInfo += "-" * 79
+    }
+    
+    $debugInfo += ""
+    $debugInfo += "=" * 79
+    $debugInfo += "                            JSON LOADING DEBUG                               "
+    $debugInfo += "=" * 79
+    $debugInfo += ""
+    $debugInfo += "JSON URL: $taskDescUrl"
+    $debugInfo += ""
+    
+    try {
+        $jsonData = Invoke-RestMethod -Uri $taskDescUrl -Headers @{"User-Agent"="PowerShell"}
+        $debugInfo += "[OK] JSON Loading Status: SUCCESS"
+        $debugInfo += "[OK] Data Type: $($jsonData.GetType().Name)"
+        $debugInfo += "[OK] Number of JSON Items: $($jsonData.Count)"
+        $debugInfo += "[OK] Task Descriptions Loaded: $($taskDescriptions.Count)"
+        $debugInfo += "[OK] Tooltips Loaded: $($taskTooltips.Count)"
+        
+        if ($taskDescriptions.Count -gt 0) {
+            $debugInfo += ""
+            $debugInfo += "-" * 79
+            $debugInfo += "                           LOADED DESCRIPTIONS                           "
+            $debugInfo += "-" * 79
+            $debugInfo += ""
+            
+            foreach ($key in $taskDescriptions.Keys) {
+                $debugInfo += "[$key]"
+                $debugInfo += "  Short: $($taskDescriptions[$key])"
+                $debugInfo += ""
+            }
+        }
+        
+        if ($taskTooltips.Count -gt 0) {
+            $debugInfo += ""
+            $debugInfo += "-" * 79
+            $debugInfo += "                             LOADED TOOLTIPS                            "
+            $debugInfo += "-" * 79
+            $debugInfo += ""
+            
+            foreach ($key in $taskTooltips.Keys) {
+                $debugInfo += "[$key]"
+                $debugInfo += "  Long: $($taskTooltips[$key])"
+                $debugInfo += ""
+            }
+        }
+        
+    } catch {
+        $debugInfo += "[ERROR] JSON Loading Status: FAILED"
+        $debugInfo += "[ERROR] Error: $($_.Exception.Message)"
+        $debugInfo += "[ERROR] Exception Type: $($_.Exception.GetType().Name)"
+        $debugInfo += ""
+        
+        try {
+            $rawContent = Invoke-WebRequest -Uri $taskDescUrl -Headers @{"User-Agent"="PowerShell"}
+            $debugInfo += "-" * 79
+            $debugInfo += "                              RAW RESPONSE                               "
+            $debugInfo += "-" * 79
+            $debugInfo += ""
+            $debugInfo += "HTTP Status: $($rawContent.StatusCode)"
+            $debugInfo += "Content Length: $($rawContent.Content.Length) characters"
+            $debugInfo += ""
+            $debugInfo += "First 500 characters:"
+            $debugInfo += $rawContent.Content.Substring(0, [Math]::Min(500, $rawContent.Content.Length))
+            
+            if ($rawContent.Content.Length -gt 500) {
+                $debugInfo += ""
+                $debugInfo += "... (content truncated)"
+            }
+            
+        } catch {
+            $debugInfo += "[ERROR] Could not fetch raw content: $($_.Exception.Message)"
+        }
+    }
+    
+    $debugTextBox.Text = $debugInfo -join "`r`n"
+    $closeButton = New-Object System.Windows.Forms.Button
+    $closeButton.Text = "Close"
+    $closeButton.Width = 80
+    $closeButton.Height = 30
+    $closeButton.Anchor = 'Bottom,Right'
+    $closeButton.Location = New-Object System.Drawing.Point(($debugForm.Width - 100), ($debugForm.Height - 70))
+    $closeButton.BackColor = [System.Drawing.Color]::FromArgb(0, 122, 204)
+    $closeButton.ForeColor = [System.Drawing.Color]::White
+    $closeButton.FlatStyle = 'Flat'
+    $closeButton.Add_Click({ $debugForm.Close() })
+    $debugForm.Controls.Add($debugTextBox)
+    $debugForm.Controls.Add($closeButton)
+    $debugForm.ShowDialog()
 })
 
 
