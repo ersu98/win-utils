@@ -13,7 +13,7 @@ $githubRepoName = "win-utils"
 $taskFolder = "utilities"
 
 $githubApiUrl = "https://api.github.com/repos/$githubRepoOwner/$githubRepoName/contents/$taskFolder"
-$taskDescUrl = "https://raw.githubusercontent.com/$githubRepoOwner/$githubRepoName/main/$taskFolder/../utilities.txt"
+$taskDescUrl = "https://raw.githubusercontent.com/$githubRepoOwner/$githubRepoName/main/$taskFolder/utilities.json"
 
 function Get-TaskScripts {
     $headers = @{
@@ -89,15 +89,23 @@ $global:ExecuteTask = {
 }
 
 $taskDescriptions = @{}
+$taskTooltips = @{}
 try {
     $descContent = Invoke-RestMethod -Uri $taskDescUrl -Headers @{"User-Agent"="PowerShell"}
-    foreach ($line in $descContent -split "`n") {
-        if ($line -match '^(.*?):\s*(.*)$') {
-            $taskDescriptions[$matches[1]] = $matches[2]
+    $jsonData = $descContent | ConvertFrom-Json
+    
+    foreach ($item in $jsonData) {
+        if ($item.PSObject.Properties['utility'] -and $item.PSObject.Properties['shortDescription']) {
+            $taskDescriptions[$item.utility] = $item.shortDescription
+            
+            if ($item.PSObject.Properties['longDescription']) {
+                $taskTooltips[$item.utility] = $item.longDescription
+            }
         }
     }
-} catch {
 
+} catch {
+    Write-Host "Warning: Could not load task descriptions from JSON file: $($_.Exception.Message)"
 }
 
 $buttonHeight = 32
@@ -141,6 +149,12 @@ foreach ($script in $taskScripts) {
     $button.Font = 'Segoe UI, 9, style=Bold'
     $button.FlatStyle = 'Flat'
     $button.Add_Click( (New-ClickHandler $scriptUrlLocal) )
+    
+    if ($taskTooltips.ContainsKey($script.name)) {
+        $tooltip = New-Object System.Windows.Forms.ToolTip
+        $tooltip.SetToolTip($button, $taskTooltips[$script.name])
+    }
+    
     $buttonPanel.Controls.Add($button)
     if ($taskDescriptions.ContainsKey($script.name)) {
         $descLabel = New-Object System.Windows.Forms.Label
@@ -183,6 +197,7 @@ $winstatusMenuItem.Add_Click({
     }
     [System.Windows.Forms.MessageBox]::Show($msg, "Windows Activation Status")
 })
+
 
 $fileMenu.DropDownItems.Clear()
 $fileMenu.DropDownItems.Add($debugMenuItem)
@@ -240,6 +255,12 @@ foreach ($script in $taskScripts) {
     $button.FlatStyle = 'Flat'
     $button.FlatAppearance.BorderSize = 0
     $button.Add_Click( (New-ClickHandler $scriptUrlLocal) )
+    
+    if ($taskTooltips.ContainsKey($script.name)) {
+        $tooltip = New-Object System.Windows.Forms.ToolTip
+        $tooltip.SetToolTip($button, $taskTooltips[$script.name])
+    }
+    
     $essentialPanel.Controls.Add($button)
 
     if ($taskDescriptions.ContainsKey($script.name)) {

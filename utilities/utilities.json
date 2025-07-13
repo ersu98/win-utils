@@ -1,0 +1,17 @@
+[
+  {
+    "utility": "sysinfo.ps1",
+    "shortDescription": "Display system information",
+    "longDescription": ""
+  },
+  {
+    "utility": "winactivator.ps1", 
+    "shortDescription": "Windows Activation Tool [Massgrave]",
+    "longDescription": "This tool can check current activation status, attempt to activate Windows using various methods."
+  },
+  {
+    "utility": "windebloater.ps1",
+    "shortDescription": "Windows Debloater Tool [ChrisTitusTech]",
+    "longDescription": "Remove unwanted Windows apps and features to optimize system performance. This tool safely removes bloatware, unnecessary Windows features, and pre-installed applications that consume system resources. Includes options to restore removed components if needed."
+  }
+]
