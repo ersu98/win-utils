@@ -5,12 +5,15 @@ $Form.Text = "Windows Utilities"
 $Form.Width = 800
 $Form.Height = 600
 $Form.StartPosition = "CenterScreen"
+$Form.BackColor = [System.Drawing.Color]::FromArgb(30, 32, 34)
+$Form.ForeColor = [System.Drawing.Color]::White
 
 $githubRepoOwner = "ersu98"
 $githubRepoName = "win-utils"
 $taskFolder = "utilities"
 
 $githubApiUrl = "https://api.github.com/repos/$githubRepoOwner/$githubRepoName/contents/$taskFolder"
+$taskDescUrl = "https://raw.githubusercontent.com/$githubRepoOwner/$githubRepoName/main/$taskFolder/../utilities.txt"
 
 function Get-TaskScripts {
     $headers = @{
@@ -44,19 +47,20 @@ if (-not (Test-IsAdmin)) {
     $outputBox.Text = "⚠️  The program did not start with Administrator privileges.`r`nSome utilities may fail due to missing permissions.`r`nTry running the script as Administrator."
 }
 
-function Execute-Task {
+
+$global:ExecuteTask = {
     param (
         [string]$scriptUrl
     )
 
     $outputBox.Clear()
 
-    $scriptContent = Invoke-RestMethod -Uri $scriptUrl
-
-    $tempScriptPath = [System.IO.Path]::GetTempFileName() + ".ps1"
-    Set-Content -Path $tempScriptPath -Value $scriptContent
-
     try {
+        $scriptContent = Invoke-RestMethod -Uri $scriptUrl
+
+        $tempScriptPath = [System.IO.Path]::GetTempFileName() + ".ps1"
+        Set-Content -Path $tempScriptPath -Value $scriptContent
+
         $psi = New-Object System.Diagnostics.ProcessStartInfo
         $psi.FileName = 'powershell.exe'
         $psi.Arguments = "-NoProfile -ExecutionPolicy Bypass -Command ""& { . '$tempScriptPath' }"""
@@ -76,16 +80,17 @@ function Execute-Task {
             $outputBox.Text = "Error: $stderr"
         }
     } catch {
-        $outputBox.Text = "Error: $($_.Exception.Message)"
+        $outputBox.Text = "Error downloading or executing script: $($_.Exception.Message)"
     } finally {
-        Remove-Item -Path $tempScriptPath -Force -ErrorAction SilentlyContinue
+        if (Test-Path $tempScriptPath) {
+            Remove-Item -Path $tempScriptPath -Force -ErrorAction SilentlyContinue
+        }
     }
 }
 
-$descUrl = "https://raw.githubusercontent.com/$githubRepoOwner/$githubRepoName/main/$taskFolder/../utilities.txt"
 $taskDescriptions = @{}
 try {
-    $descContent = Invoke-RestMethod -Uri $descUrl -Headers @{"User-Agent"="PowerShell"}
+    $descContent = Invoke-RestMethod -Uri $taskDescUrl -Headers @{"User-Agent"="PowerShell"}
     foreach ($line in $descContent -split "`n") {
         if ($line -match '^(.*?):\s*(.*)$') {
             $taskDescriptions[$matches[1]] = $matches[2]
@@ -119,13 +124,13 @@ $outputBox.Font = 'Consolas, 10'
 function New-ClickHandler($url) {
     return {
         param($sender, $eventArgs)
-        Execute-Task -scriptUrl $url
+        & $global:ExecuteTask -scriptUrl $url
     }.GetNewClosure()
 }
 
 $yPos = 10
 foreach ($script in $taskScripts) {
-    $scriptUrlLocal = $script.download_url  # Capture the value for this iteration
+    $scriptUrlLocal = $script.download_url
     $button = New-Object System.Windows.Forms.Button
     $button.Text = $script.name
     $button.Width = 180
@@ -150,18 +155,18 @@ foreach ($script in $taskScripts) {
     $yPos += $buttonSpacing
 }
 
-# File Menu
+
 $menuStrip = New-Object System.Windows.Forms.MenuStrip
 $fileMenu = New-Object System.Windows.Forms.ToolStripMenuItem('File')
 $debugMenuItem = New-Object System.Windows.Forms.ToolStripMenuItem('Debug')
 $winstatusMenuItem = New-Object System.Windows.Forms.ToolStripMenuItem('Windows Activation Status')
 
-# Debug button
+
 $debugMenuItem.Add_Click({
     [System.Windows.Forms.MessageBox]::Show(($taskScripts | Select-Object name, download_url | Out-String), "Loaded Scripts & URLs")
 })
 
-# Windows Activation Status button
+
 $winstatusMenuItem.Add_Click({
     try {
         $os = Get-CimInstance -ClassName Win32_OperatingSystem
@@ -193,9 +198,75 @@ $menuHeight = $menuStrip.Height
 $buttonPanel.Top = 10 + $menuHeight
 $outputBox.Top = $buttonPanel.Top + $buttonPanel.Height + 10
 
-$Form.BackColor = [System.Drawing.Color]::FromArgb(245, 248, 255)
-$Form.Font = 'Segoe UI, 10'
-$Form.Width = 800
-$Form.Height = $formHeight
+if ($Form.Controls.Contains($buttonPanel)) { $Form.Controls.Remove($buttonPanel) }
+
+$essentialPanel = New-Object System.Windows.Forms.Panel
+$essentialPanel.BackColor = [System.Drawing.Color]::FromArgb(40, 44, 52)
+$essentialPanel.Width = 900
+$essentialPanel.Top = 20 + $menuStrip.Height
+$essentialPanel.Left = 20
+$essentialPanel.BorderStyle = 'FixedSingle'
+$Form.Controls.Add($essentialPanel)
+
+$essentialHeader = New-Object System.Windows.Forms.Label
+$essentialHeader.Text = 'Scripts'
+$essentialHeader.Font = 'Segoe UI, 13, style=Bold'
+$essentialHeader.ForeColor = [System.Drawing.Color]::DeepSkyBlue
+$essentialHeader.AutoSize = $true
+$essentialHeader.Top = 10
+$essentialHeader.Left = 10
+$essentialPanel.Controls.Add($essentialHeader)
+
+$buttonY = 50
+$buttonX = 20
+$buttonW = 220
+$buttonH = 48
+$descX = $buttonX + $buttonW + 20
+$descW = 600
+$descH = $buttonH
+$buttonSpacingY = 20
+
+foreach ($script in $taskScripts) {
+    $scriptUrlLocal = $script.download_url
+    $button = New-Object System.Windows.Forms.Button
+    $button.Text = $script.name
+    $button.Width = $buttonW
+    $button.Height = $buttonH
+    $button.Top = $buttonY
+    $button.Left = $buttonX
+    $button.BackColor = [System.Drawing.Color]::FromArgb(0, 122, 204)
+    $button.ForeColor = [System.Drawing.Color]::White
+    $button.Font = 'Segoe UI, 12, style=Bold'
+    $button.FlatStyle = 'Flat'
+    $button.FlatAppearance.BorderSize = 0
+    $button.Add_Click( (New-ClickHandler $scriptUrlLocal) )
+    $essentialPanel.Controls.Add($button)
+
+    if ($taskDescriptions.ContainsKey($script.name)) {
+        $descLabel = New-Object System.Windows.Forms.Label
+        $descLabel.Text = $taskDescriptions[$script.name]
+        $descLabel.Width = $descW
+        $descLabel.Height = $descH
+        $descLabel.Top = $buttonY + 12
+        $descLabel.Left = $descX
+        $descLabel.Font = 'Segoe UI, 11'
+        $descLabel.ForeColor = [System.Drawing.Color]::LightGray
+        $essentialPanel.Controls.Add($descLabel)
+    }
+    $buttonY += $buttonH + $buttonSpacingY
+}
+
+$essentialPanel.Height = $buttonY + 20
+
+$outputBox.Top = $essentialPanel.Top + $essentialPanel.Height + 20
+$outputBox.Left = 20
+$outputBox.Width = 900
+$outputBox.Height = 160
+$outputBox.BackColor = [System.Drawing.Color]::FromArgb(24, 26, 28)
+$outputBox.ForeColor = [System.Drawing.Color]::White
+$outputBox.Font = 'Consolas, 11'
+
+$Form.Width = 960
+$Form.Height = $outputBox.Top + $outputBox.Height + 60
 
 $Form.ShowDialog()
